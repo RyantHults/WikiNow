@@ -1,0 +1,112 @@
+<!DOCTYPE HTML>
+
+<html class="" lang="en">
+    <head>
+        <title>Yet Another Wiki Search</title>
+        <meta charset="utf-8">
+        <link rel="icon" type="image/png" href="assets/img/favicon.png">
+        <meta name="viewport" content="width=device-width, height=device-height initial-scale=1">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">        
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script><link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet"> 
+        <link href="https://use.fontawesome.com/releases/v5.0.6/css/all.css" rel="stylesheet">
+        <meta name="author" content="Ryan Hults">
+        <link rel="author" href="https://ryanthults.github.io" alt="https://plus.google.com/u/2/108203311083664618233">
+        <script>
+            (function() {
+                $(document).ready(function() {
+                    function htmlStripper(val) {
+                        console.log("before regex "+val);
+                        val = $(val).text();
+                        console.log("after regex "+val);
+                        val = encodeURIComponent(val);
+                        return val;
+                    }
+                    function entryBuilder(link, title, content) {
+                        var containerTop = '<div class = "row wiki-entry">';
+                        var entryContainer = '<div class = "col-12"><a href='+link+' target="_blank"> <h1 class="entry-title">'+ title + '</h1></a> <h4 class="entry-contents">'+content+'</div>';
+                        var containerBot = '</div> <br />';
+                        var entry = containerTop + entryContainer + containerBot;
+                        $("#app").append(entry);
+                    }
+                    
+                    //get content of entry with given title and id.
+                    function getEntryContent(title,id) {
+                        var urlFriendlyTitle = encodeURIComponent(title);
+                        $.getJSON("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts%7Cinfo%7Cimages&list=&generator=allpages&callback=a&exsentences=2&exlimit=1&explaintext=1&inprop=url&gapfrom="+urlFriendlyTitle+"&gapto="+urlFriendlyTitle+"&callback=?", function(b) {   
+                            entryBuilder(b.query.pages[id].fullurl,b.query.pages[id].title, b.query.pages[id].extract);
+                        });
+                    }
+                    
+                    //get a list random entries
+                    function getRandEntry() {
+                        $.getJSON("https://en.wikipedia.org/w/api.php?action=query&origin=*&format=json&list=random&rnnamespace=0&rnlimit=10&callback=?", function(a) {
+                            for (var i=0; i < a.query.random.length -1; i++) {
+                                getEntryContent(a.query.random[i].title, a.query.random[i].id);
+                            }
+                        });
+
+                    }
+
+                    $('#search-btn').on('click', function(){    
+                        getRandEntry();
+                    });
+                });
+            })(jQuery);
+        </script>
+        <style>
+                body {
+                    background: maroon;
+                }
+            /* Overrides */
+                .container-fluid {
+                    height: 100vh;
+                    width: 100vw;
+                    margin: 0 !important;
+                }
+
+            /* main CSS */
+                #app {
+                    background: white;
+                    border-radius: 3px;
+                    margin-top: 30vh;
+                    padding: 10px 20px 20px 20px;
+                }
+
+                .wiki-entry {
+                    padding: 20px 0px;
+                    border: 1px solid black;
+                }
+
+                #attribution {
+                    margin-top: 20px;
+                    color: white;
+                }
+        </style>
+    </head>
+    <body>
+        <div class="container-fluid">
+            <div class = "row">
+                <div class="col-sm-6 offset-sm-3 text-center search-bar">
+                    <button class="btn" id="search-btn">Test</button>
+                </div>
+                <div class = "col-sm-12 col-md-6 col-lg-10 offset-md-3 offset-lg-1" id = "app">
+                    <div class = "row wiki-entry">
+                        <div class = "col-2 entry-image align-self-center">
+                            <img src="assets/img/YAQM-thumb.png" class="img-fluid" alt="Picture for wiki entry"/>
+                        </div>
+                        <div class = "col-10">
+                            <h1 class="entry-title">Title of entry!</h1>
+                            <h4 class="entry-contents">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent orci orci, tincidunt sed erat vel, rutrum laoreet nulla. </h4>
+                        </div>
+                    </div> 
+                    <br />
+                </div> 
+                <div class="col-12 align-self-center text-center">
+                    <p style="color:white">by <a href="http://ryanthults.com" target="__blank" style="color:white;">Ryan Hults</a><p/>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
