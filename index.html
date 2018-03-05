@@ -2,7 +2,7 @@
 
 <html class="" lang="en">
     <head>
-        <title>Yet Another Wiki Search</title>
+        <title>WikiNow</title>
         <meta charset="utf-8">
         <link rel="icon" type="image/png" href="assets/img/favicon.png">
         <meta name="viewport" content="width=device-width, height=device-height initial-scale=1">
@@ -16,96 +16,357 @@
         <script>
             (function() {
                 $(document).ready(function() {
-                    function htmlStripper(val) {
-                        console.log("before regex "+val);
-                        val = $(val).text();
-                        console.log("after regex "+val);
-                        val = encodeURIComponent(val);
-                        return val;
+                    function SearchAnimation() {
+                        console.log("animation fired");
+                        if($("#search-group").hasClass("search-group-animation")) {
+                            $("#app-container").addClass("fade-out-in");
+                        } else {
+                            $("#app-container").addClass("fade-in");
+                            $("#app-container").addClass("opaque");
+                            $("#attribution-landing").addClass("transparent");
+                            $("#attribution-landing").html("");
+                            $("#logo-container").addClass("transparent");
+                            $("#logo-container").html("");
+                            $("#search-group").addClass("search-group-animation");
+                            $("#search-group").css("top","20px");
+                            $("#logo-sm-container").addClass("fade-in");
+                            $("#logo-sm-container").addClass("opaque");
+                        }
+                        setTimeout(function() {
+                            $("#app-container").removeClass("fade-in fade-out-in");
+                        }, 300);
                     }
+
+                    //creates html for entry when given a link, title, and content
                     function entryBuilder(link, title, content) {
-                        var containerTop = '<div class = "row wiki-entry">';
-                        var entryContainer = '<div class = "col-12"><a href='+link+' target="_blank"> <h1 class="entry-title">'+ title + '</h1></a> <h4 class="entry-contents">'+content+'</div>';
-                        var containerBot = '</div> <br />';
-                        var entry = containerTop + entryContainer + containerBot;
+                        //console.log("Link is: "+link+", Title is: "+title+", and content is: "+content+".");
+                        var entry = '<div class = "col-12 col-md-4 col-lg-3 wiki-entry"><a href='+link+' target="_blank"> <h2 class="entry-title">'+ title + '</h2></a> <h4 class="entry-contents">'+content+'</div><br/>';
                         $("#app").append(entry);
                     }
-                    
-                    //get content of entry with given title and id.
-                    function getEntryContent(title,id) {
-                        var urlFriendlyTitle = encodeURIComponent(title);
-                        $.getJSON("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts%7Cinfo%7Cimages&list=&generator=allpages&callback=a&exsentences=2&exlimit=1&explaintext=1&inprop=url&gapfrom="+urlFriendlyTitle+"&gapto="+urlFriendlyTitle+"&callback=?", function(b) {   
-                            entryBuilder(b.query.pages[id].fullurl,b.query.pages[id].title, b.query.pages[id].extract);
+
+                    //used if the search returns nothing
+                    function NoEntries() {
+                        var noticeTxt = '<div class = "col-12 wiki-entry no-results text-center"><div class="col-12"><h3 class="noEntry">There are no results :(</h3></div></div>'
+                        $("#app").append(noticeTxt);
+                    }
+                    //get a list entries matching the search terms
+                    function getSearchEntry(searchTerm) {
+                        var term = encodeURIComponent(searchTerm);
+                        console.log("search fired");
+                        $.getJSON("https://en.wikipedia.org/w/api.php?action=opensearch&format=json&origin=*&search="+term+"&limit=50&redirects=resolve&callback=?", function(a) {
+                            $("#app").html("");
+                            if(a[1].length > 0) {
+                                for (var i=0; i <= a[1].length -1; i++) {
+                                    entryBuilder(a[3][i], a[1][i], a[2][i]);
+                                }
+                            } else {
+                                NoEntries();
+                            }
                         });
                     }
                     
+                    $('#search-btn').on('click', function(){   
+                        if ($("#searchBar").val() != "") {
+                            SearchAnimation();
+                            var searchTerm = $("#searchBar").val();
+                            getSearchEntry(searchTerm);
+                        }
+                    });
+
+                    $('#searchBar').keypress(function(e) {
+                       if(e.keyCode==13 && $("#searchBar").val() != ""){
+                            SearchAnimation();
+                            var searchTerm = $("#searchBar").val();
+                            getSearchEntry(searchTerm);
+                       } 
+                    });
+
+                    //get content of entry with given title and id.
+                    function getEntryContent(title,id) {
+                        var urlFriendlyTitle = encodeURIComponent(title);
+                        $.getJSON("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts%7Cinfo%7Cimages&list=&generator=allpages&callback=a&exsentences=1&exlimit=1&explaintext=1&inprop=url&gapfrom="+urlFriendlyTitle+"&gapto="+urlFriendlyTitle+"&callback=?", function(b) {   
+                            entryBuilder(b.query.pages[id].fullurl,b.query.pages[id].title, b.query.pages[id].extract);
+                        });
+                    }
+
                     //get a list random entries
                     function getRandEntry() {
+                        console.log("random fired");
                         $.getJSON("https://en.wikipedia.org/w/api.php?action=query&origin=*&format=json&list=random&rnnamespace=0&rnlimit=10&callback=?", function(a) {
+                            $("#app").html("");
                             for (var i=0; i < a.query.random.length -1; i++) {
                                 getEntryContent(a.query.random[i].title, a.query.random[i].id);
                             }
                         });
-
                     }
 
-                    $('#search-btn').on('click', function(){    
+                    $('#rand-btn').on('click', function() {
+                        SearchAnimation();   
                         getRandEntry();
                     });
                 });
             })(jQuery);
         </script>
         <style>
+                html {
+                    overflow-y: scroll;
+                }
+
                 body {
-                    background: maroon;
+                    background: #f2f2f2;
                 }
             /* Overrides */
                 .container-fluid {
-                    height: 100vh;
-                    width: 100vw;
+                    height: 100%;
+                    width: 100%;
                     margin: 0 !important;
                 }
 
             /* main CSS */
+
+                #app-container {
+                    opacity: 0;
+                    z-index: 20;
+                }
+
                 #app {
-                    background: white;
+                    background: #f2f2f2;
                     border-radius: 3px;
-                    margin-top: 30vh;
+                    margin-top: 10vh;
                     padding: 10px 20px 20px 20px;
+                    transition: opacity ease-in-out 1s;
+                }
+                
+                #logo-container{
+                    transition: opacity ease-in-out 1s;
+                }
+
+                #logo-sm-container {
+                    position: absolute;
+                    top: 10px;
+                    max-width: 125px;
+                    opacity: 0;
+                }
+
+                #search-group {
+                    opacity: 1;
+                    top: 15vh;
+                    position: absolute;
+                    z-index: 30;
+                }
+
+                .searchBarButton {
+                    background: white;
+                    border: 1px solid #cdcdcd;
+                    border-radius: 0px;
                 }
 
                 .wiki-entry {
-                    padding: 20px 0px;
-                    border: 1px solid black;
+                    padding: 20px;
+                    background: white;
+                    margin: 15px;
+                    overflow: hidden;
+                    max-height: 400px !important;
+                    box-shadow: 0px 0px 3px 1px #cdcdcd;
+                }
+                
+                .no-results {
+                    color: #767676;
                 }
 
-                #attribution {
+                .attribution {
                     margin-top: 20px;
-                    color: white;
+                    color: #898989;
                 }
+
+                .opaque {
+                    opacity: 1 !important;
+                }
+                
+                .transparent {
+                    opacity: 0;
+                }
+
+                .fade-in {
+                    -webkit-animation: fadeIn .4s ease 1;
+                    -moz-animation: fadeIn .4s ease 1;
+                    animation: fadeIn .4s ease 1;
+                }
+
+                .fade-out {
+                    -webkit-animation: fadeOut .4s ease 1;
+                    -moz-animation: fadeOut .4s ease 1;
+                    animation: fadeOut .4s ease 1;
+                }
+
+                .fade-out-in {
+                    -webkit-animation: fadeOutIn .4s ease 1;
+                    -moz-animation: fadeOutIn .4s ease 1;
+                    animation: fadeOutIn .4s ease 1;
+                }
+
+                .search-group-animation {
+                    -webkit-animation: moveToTop .3s ease 1;
+                    -moz-animation: moveToTop .3s ease 1;
+                    animation: moveToTop .3s ease 1;
+                }
+
+                
+
+                @-webkit-keyframes moveToTop {
+                    0% {
+                        top: 50vh;
+                    }
+                    100% {
+                        top: 20px;
+                    }
+                }
+
+                @-moz-keyframes moveToTop {
+                    0% {
+                        top: 50vh;
+                    }
+                    100% {
+                        top: 20px;
+                    }
+                }
+
+                @keyframes moveToTop {
+                    0% {
+                        top: 50vh;
+                    }
+                    100% {
+                        top: 20px;
+                    }
+                }
+
+                @-webkit-keyframes fadeIn {
+                    0% {
+                        opacity: 0;
+                    }
+                    100% {
+                        opacity: 1;
+                    }
+                }
+
+                @-moz-keyframes fadeIn {
+                    0% {
+                        opacity: 0;
+                    }
+                    100% {
+                        opacity: 1;
+                    }
+                }
+
+                @keyframes fadeIn {
+                    0% {
+                        opacity: 0;
+                    }
+                    100% {
+                        opacity: 1;
+                    }
+                }
+
+                 @-webkit-keyframes fadeOut {
+                    0% {
+                        opacity: 1;
+                    }
+                    100% {
+                        opacity: 0;
+                    }
+                }
+
+                @-moz-keyframes fadeOut {
+                    0% {
+                        opacity: 1;
+                    }
+                    100% {
+                        opacity: 0;
+                    }
+                }
+
+                @keyframes fadeOut {
+                    0% {
+                        opacity: 1;
+                    }
+                    100% {
+                        opacity: 0;
+                    }
+                }
+
+                @-webkit-keyframes fadeOutIn {
+                    0% {
+                        opacity: 1;
+                    }
+                    50% {
+                        opacity: 0;
+                    }
+                    100% {
+                        opacity: 1;
+                    }
+                }
+
+                @-moz-keyframes fadeOutIn {
+                    0% {
+                        opacity: 1;
+                    }
+                    50% {
+                        opacity: 0;
+                    }
+                    100% {
+                        opacity: 1;
+                    }
+                }
+
+                @keyframes fadeOutIn {
+                    0% {
+                        opacity: 1;
+                    }
+                    50% {
+                        opacity: 0;
+                    }
+                    100% {
+                        opacity: 1;
+                    }
+                }
+
+                
         </style>
     </head>
     <body>
         <div class="container-fluid">
             <div class = "row">
-                <div class="col-sm-6 offset-sm-3 text-center search-bar">
-                    <button class="btn" id="search-btn">Test</button>
+                <div class="col-sm-2 align-items-center" id="logo-sm-container">
+                    <a href="#"><img class="img-fluid mx-auto d-block" id="logo-sm-img" src="assets/img/WikiNow-logo.png" alt="WikiNow Logo"/></a>
                 </div>
-                <div class = "col-sm-12 col-md-6 col-lg-10 offset-md-3 offset-lg-1" id = "app">
-                    <div class = "row wiki-entry">
-                        <div class = "col-2 entry-image align-self-center">
-                            <img src="assets/img/YAQM-thumb.png" class="img-fluid" alt="Picture for wiki entry"/>
+                <div class="col-6 offset-3 text-center align-items-center" id="search-group">
+                    <div class="text-center align-items-center" id="logo-container">
+                        <a href="#"><img class="img-fluid mx-auto d-block" id="logo-img" src="assets/img/WikiNow-logo.png" alt="WikiNow Logo"/></a>
+                        <h2>WikiNow</h2>
+                        <h4>A Wikipedia search engine with Google Now-style cards</h4>
+                        <br />
+                    </div>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="searchBar" placeholder="Search" aria-label="" aria-describedby="search bar">
+                        <div class="btn searchBarButton" id="search-btn" type="button"><i class="fas fa-search"></i></div>
+                        <div class="btn searchBarButton" id="rand-btn"type="button">Random</div>
+                    </div>
+                    <div class="row">
+                        <div class="attribution col-12 align-self-center text-center" id="attribution-landing">
+                            <p>by <a href="http://ryanthults.com" target="__blank" style="color:#898989;">Ryan Hults</a><p/>
                         </div>
-                        <div class = "col-10">
-                            <h1 class="entry-title">Title of entry!</h1>
-                            <h4 class="entry-contents">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent orci orci, tincidunt sed erat vel, rutrum laoreet nulla. </h4>
-                        </div>
-                    </div> 
-                    <br />
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class = "col-sm-12 col-md-10 offset-sm-0 offset-md-1" id="app-container">
+                    <div class="row justify-content-center" id = "app">
+                        <!-- content will go here -->
+                    </div>
+                    <div class="attribution col-12 align-self-center text-center" id="attribution-content">
+                        <p>by <a href="http://ryanthults.com" target="__blank" style="color:#898989;">Ryan Hults</a><p/>
+                    </div>
                 </div> 
-                <div class="col-12 align-self-center text-center">
-                    <p style="color:white">by <a href="http://ryanthults.com" target="__blank" style="color:white;">Ryan Hults</a><p/>
-                </div>
             </div>
         </div>
     </body>
